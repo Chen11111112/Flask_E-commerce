@@ -1,8 +1,9 @@
 from flask import Flask, jsonify, request, render_template
 from flask_cors import CORS # 處理跨域問題 (CORS)
-import json
+from mysql.connector import Error
 import time
 from flask_mail import Mail, Message
+import mysql.connector
 
 app = Flask(__name__)
 # 允許跨域請求，用於開發階段
@@ -15,16 +16,19 @@ app.config['MAIL_USERNAME'] = '628347jpjp@gmail.com'
 app.config['MAIL_PASSWORD'] = 'rqvq xkbl rfnb tcgx'
 app.config['MAIL_DEFAULT_SENDER'] = '628347jpjp@gmail.com'
 
-# --- 模擬資料庫 ---
-PRODUCTS = [
-    {"id": 1, "title": "經典咖啡豆", "price": 12.99, "category": "飲品"},
-    {"id": 2, "title": "美味甜甜圈", "price": 4.50, "category": "點心"},
-    {"id": 3, "title": "高級茶葉禮盒", "price": 25.00, "category": "飲品"},
-    {"id": 4, "title": "特製三明治", "price": 7.80, "category": "餐點"},
-    {"id": 5, "title": "手工餅乾", "price": 3.00, "category": "點心"},
-]
-# 購物車項目 (在 Flask 模擬中不存儲，主要由前端管理)
-# 但提供 API 端點給前端呼叫。
+# 資料庫配置
+db_config = {
+    'host': '127.0.0.1',
+    'user': 'root',         # 你的 MySQL 帳號
+    'password': '11256040', # 你的 MySQL 密碼
+    'database': 'shop_db'
+}
+
+def get_db_connection():
+    """ 建立資料庫連線 """
+    connection = mysql.connector.connect(**db_config)
+    return connection
+
 
 # --- Flask 路由定義 ---
 
@@ -36,10 +40,19 @@ def index():
 # 1. 獲取所有商品資料 (GET /api/products)
 @app.route('/practice/api/products', methods=['GET'])
 def get_products():
-    """模擬 ProductAPI.getProducts()"""
-    # 模擬網路延遲
-    time.sleep(0.5) 
-    return jsonify(PRODUCTS)
+    conn = None
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True) # 回傳字典格式，方便轉 JSON
+        cursor.execute("SELECT * FROM products")
+        products_from_db = cursor.fetchall()
+        return jsonify(products_from_db)
+    except Error as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        if conn and conn.is_connected():
+            cursor.close()
+            conn.close()
 
 # 2. 刪除購物車項目 (DELETE /api/products/<item_id>)
 @app.route('/practice/api/products/<int:item_id>', methods=['DELETE'])
@@ -94,6 +107,12 @@ def checkout():
     try:
         mail.send(msg)
         print(f"郵件已成功寄至: {target_email}")
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        sql = "INSERT INTO orders (order_no, user_email, total_price) VALUES (%s, %s, %s)"
+        cursor.execute(sql, (order_no, target_email, totPrice))
+        conn.commit()
         
         # 統一回傳 JSON
         return jsonify({
@@ -102,7 +121,7 @@ def checkout():
             "orderNo": order_no,
             "details": order_details
         }), 200
-# 11256040@ntub.edu.tw
+
     # 錯誤處理
     except Exception as e:
         print(f"寄信失敗，錯誤訊息：{str(e)}")
