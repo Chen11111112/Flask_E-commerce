@@ -73,10 +73,11 @@ function renderProductList() {
     filteredProducts.forEach(product => {
         const card = document.createElement('div');
         card.className = 'product-card';
+        priced = product.price
         card.innerHTML = `
             <h3>${product.title}</h3>
             <p class="product-type">類型: ${product.category}</p>
-            <p class="price">$${product.price.toFixed(2)}</p>
+            <p class="price">$${Number(priced)}</p>
             <div class="actions">
                 <input
                     type="number"
@@ -115,11 +116,12 @@ function renderShoppingCart() {
     cartItems.forEach(item => {
         
         const itemDiv = document.createElement('div');
+        priced = item.price
         itemDiv.className = 'cart-item';
         itemDiv.innerHTML = `
             <div class="item-info">
                 <h4>${item.title}</h4>
-                <p>單價: $${item.price.toFixed(2)}</p>
+                <p>單價: $${Number(priced).toFixed(2)}</p>
                 <p>數量: ${item.quantity}</p>
                 <p class="subtotal">小計: ${(item.price * item.quantity).toFixed(2)}</p>
             </div>
@@ -161,7 +163,7 @@ async function fetchProducts() {
         
         const data = await response.json();
         products = data;
-        
+
         const allTypes = data.map(p => p.category);
         types = ['All', ...Array.from(new Set(allTypes))];
         error = null;
