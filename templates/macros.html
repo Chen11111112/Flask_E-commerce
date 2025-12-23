@@ -1,0 +1,42 @@
+{# 商品列表組件 #}
+{% macro product_section(title="商品列表") %}
+<section id="products-section" class="products-section">
+    <h2>{{ title }}</h2>
+    <div id="type-filters" class="type-filters">
+        </div>
+    <input
+        type="text"
+        id="search-input"
+        placeholder="搜尋商品..."
+        class="search-input"
+    />
+    <div id="products-grid" class="products-grid">
+        <div id="products-loading" class="loading">
+            <p>載入商品中...</p>
+        </div>
+    </div>
+</section>
+{% endmacro %}
+
+{# 購物車側邊欄組件 #}
+{% macro cart_sidebar(title="購物車") %}
+<aside id="cart-section" class="cart-section">
+    <h2>{{ title }}</h2>
+    <div id="cart-items" class="cart-items">
+        <p id="cart-empty"></p>
+    </div>
+
+    <div id="cart-total" class="cart-total"></div>
+    <input
+        id="ipt-email"
+        placeholder="輸入使用者信箱"
+    />
+    <button
+        id="btn-checkout"
+        class="btn-checkout"
+        disabled
+    >
+        結帳
+    </button>
+</aside>
+{% endmacro %}
