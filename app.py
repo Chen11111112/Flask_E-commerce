@@ -12,9 +12,9 @@ CORS(app)
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 587
 app.config['MAIL_USE_TLS'] = True
-app.config['MAIL_USERNAME'] = '628347jpjp@gmail.com'
-app.config['MAIL_PASSWORD'] = 'rqvq xkbl rfnb tcgx'
-app.config['MAIL_DEFAULT_SENDER'] = '628347jpjp@gmail.com'
+app.config['MAIL_USERNAME'] = 'XXXX@gmail.com'
+app.config['MAIL_PASSWORD'] = '16位密碼'
+app.config['MAIL_DEFAULT_SENDER'] = 'XXXX@gmail.com'
 
 # 資料庫配置
 db_config = {
@@ -134,3 +134,4 @@ def checkout():
     
 if __name__ == '__main__':
     app.run(debug=True)
+
