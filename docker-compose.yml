@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  # 資料庫服務
+  db:
+    image: mysql:8.0
+    container_name: mysql_db
+    
+    restart: always
+    environment:
+      MYSQL_DATABASE: my_shop      # 資料庫名稱
+      MYSQL_ROOT_PASSWORD: 11256040 # 資料庫密碼
+    ports:
+      - "3307:3306" # 右邊是本機跑的服務
+    volumes:
+      - db_data:/var/lib/mysql     
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql # 將你的資料庫輸出成.sql
+
+  # Flask 後端服務
+  flask_app:
+    build: .
+    container_name: flask_backend
+    restart: always
+    ports:
+      - "5000:5000"
+    environment:
+      # 這裡的 HOST 要填上面定義的服務名稱 "db"
+      DB_HOST: db
+      DB_USER: root
+      DB_PASSWORD: 11256040
+      DB_NAME: my_shop
+    depends_on:
+      - db
+
+volumes:
+  db_data:
