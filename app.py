@@ -20,7 +20,7 @@ app.config['MAIL_DEFAULT_SENDER'] = 'XXXX@gmail.com'
 db_config = {
     'host': '127.0.0.1',
     'user': 'root',         # 你的 MySQL 帳號
-    'password': '11256040', # 你的 MySQL 密碼
+    'password': 'password', # 你的 MySQL 密碼
     'database': 'shop_db'
 }
 
@@ -134,4 +134,5 @@ def checkout():
     
 if __name__ == '__main__':
     app.run(debug=True)
+
 
