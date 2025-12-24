@@ -57,9 +57,6 @@ def get_products():
 # 2. 刪除購物車項目 (DELETE /api/products/<item_id>)
 @app.route('/practice/api/products/<int:item_id>', methods=['DELETE'])
 def delete_cart_item(item_id):
-    """模擬 ProductAPI.deleteCartItem()"""
-    # 由於購物車狀態在前台，這裡只模擬成功回應
-    # 根據您的 React 程式碼，這裡的 ID 其實是 CartItem 的 ID，我們僅模擬成功
     print(f"模擬刪除 ID: {item_id}")
     return jsonify({"message": f"Item {item_id} deleted successfully"}), 200
 
@@ -134,5 +131,6 @@ def checkout():
     
 if __name__ == '__main__':
     app.run(debug=True)
+
 
 
