@@ -31,6 +31,8 @@ db_config = {
     'database': os.getenv('DB_NAME', 'shop_db')
 }
 
+print("DB CONFIG:", db_config)
+
 def get_db_connection():
     """ 建立資料庫連線 """
     connection = mysql.connector.connect(**db_config)
@@ -66,68 +68,57 @@ def delete_cart_item(item_id):
 @app.route('/practice/api/products/checkout', methods=['POST'])
 def checkout():
     target_email = request.form.get('user_email')
-    print("使用者信箱: ", target_email)
-    
     order_no = f"ORD-{int(time.time())}"
     data = request.form
     
-    order_details = []
     total_items = int(data.get('total_items', 0))
+    order_details = []
     email_items_text = ""
     totPrice = 0
 
-    for i in range(total_items):
-        title = data.get(f'title_{i}')
-        qty = data.get(f'quantity_{i}')
-        price = data.get(f'price_{i}')
-        totPrice += float(price or 0)
-        item = {
-            "productId": data.get(f'productId_{i}'),
-            "quantity": qty,
-            "title": title,
-            "price": price,
-        }
-        order_details.append(item)
-        email_items_text += f"- {title} x {qty} 份 (${price})\n"
-
-    print(f"----- 收到結帳訂單: {order_no} -----")
-
-    msg = Message(
-        subject=f"【訂單確認】感謝您的訂購！訂單編號：{order_no}",
-        recipients=[target_email],
-        body=f"您好！感謝您訂購我們的商品！\n\n您的訂單明細如下：\n{email_items_text}\n祝您購物愉快!!\n共 {totPrice} $"
-    )
-
     try:
-        # 執行寄信
-        mail.send(msg)
-        print(f"郵件已成功寄至: {target_email}")
-
-        # 寫入資料庫
         conn = get_db_connection()
         cursor = conn.cursor()
-        sql = "INSERT INTO orders (order_no, user_email, total_price) VALUES (%s, %s, %s)"
-        cursor.execute(sql, (order_no, target_email, totPrice))
+
+        for i in range(total_items):
+            p_id = data.get(f'productId_{i}') # 修正點：在這裡定義 p_id
+            qty = int(data.get(f'quantity_{i}', 0))
+            price = float(data.get(f'price_{i}', 0))
+            title = data.get(f'title_{i}')
+            
+            subtotal = price * qty
+            totPrice += subtotal
+            
+            # 1. 寫入資料庫 (這會觸發 MySQL Trigger 檢查庫存)
+            sql = "INSERT INTO orders (order_no, user_email, total_price, product_id, quantity) VALUES (%s, %s, %s, %s, %s)"
+            cursor.execute(sql, (order_no, target_email, subtotal, p_id, qty))
+            
+            order_details.append({"title": title, "quantity": qty, "price": price})
+            email_items_text += f"- {title} x {qty} 份 (${totPrice})\n"
+
+        # 2. 統一提交 (如果其中一個商品庫存不足，Trigger 報錯會直接跳到 except，不會 commit)
         conn.commit()
-        
-        return jsonify({
-            "success": True,
-            "message": "結帳成功，訂單確認信已寄出！",
-            "orderNo": order_no,
-            "details": order_details
-        }), 200
+
+        # 3. 資料庫成功後才寄信
+        msg = Message(
+            subject=f"【訂單確認】訂單編號：{order_no}",
+            recipients=[target_email],
+            body=f"您好！感謝訂購！\n\n訂單明細：\n{email_items_text}\n總金額：${totPrice}"
+        )
+        mail.send(msg)
+
+        return jsonify({"success": True, "message": "結帳成功！","orderNo":order_no}), 200
 
     except Exception as e:
-        print(f"操作失敗，錯誤訊息：{str(e)}")
-        return jsonify({
-            "success": False, 
-            "message": f"操作失敗：{str(e)}",
-            "orderNo": order_no
-        }), 500
+        if 'conn' in locals(): conn.rollback() # 出錯時回滾
+        error_msg = str(e)
+        # 這裡會抓到你 Trigger 寫的「庫存不足，無法建立訂單！」
+        return jsonify({"success": False, "message": f"操作失敗：{error_msg}"}), 500
     finally:
         if 'conn' in locals() and conn.is_connected():
             cursor.close()
             conn.close()
+
 
 if __name__ == '__main__':
     # 這裡的 debug 建議在生產環境改為 False
